@@ -1,0 +1,2 @@
+# Kafka client for Python
+confluent-kafka
