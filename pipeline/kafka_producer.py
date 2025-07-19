@@ -1,10 +1,7 @@
 import json
 import time
-import sys
 from confluent_kafka import Producer
 
-# Import the data generator from sibling directory
-sys.path.append('..')
 from data_generator.simulate_data import generate_data_point, SENSORS, METRIC_TYPES
 import random
 
