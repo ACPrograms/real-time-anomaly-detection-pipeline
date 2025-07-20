@@ -5,9 +5,11 @@ import os
 from dotenv import load_dotenv
 import time
 
-# Load environment variables
+# Load environment variables from .env file at the project root
 load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Use the specific database URL meant for the dashboard running on the host
+DATABASE_URL = os.getenv("DASHBOARD_DATABASE_URL")
 
 # Page configuration
 st.set_page_config(
@@ -20,7 +22,7 @@ st.set_page_config(
 def get_db_engine():
     """Returns a singleton SQLAlchemy engine instance."""
     if not DATABASE_URL:
-        st.error("DATABASE_URL environment variable not set. Please configure it in your .env file.")
+        st.error("DASHBOARD_DATABASE_URL not set. Please configure it in your .env file.")
         st.stop()
     return create_engine(DATABASE_URL)
 
@@ -42,6 +44,7 @@ latest_data_placeholder = st.empty()
 anomaly_table_placeholder = st.empty()
 charts_placeholder = st.empty()
 
+# Main loop to refresh the dashboard
 while True:
     engine = get_db_engine()
 

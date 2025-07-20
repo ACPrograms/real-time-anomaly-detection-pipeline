@@ -18,4 +18,4 @@ COPY . .
 # Command to run when the container starts
 # We run the consumer as it's the main long-running process
 # Using '-m' ensures Python paths work correctly
-CMD ["python3", "-m", "pipeline.kafka_consumer"]
+CMD ["python3", "pipeline/kafka_consumer.py"]

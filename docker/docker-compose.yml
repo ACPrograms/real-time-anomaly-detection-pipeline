@@ -38,10 +38,8 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    # This service will not start until kafka and postgres-db are "healthy"
     depends_on:
       - kafka
       - postgres-db
-    # environment variables from the .env file available to this container
     env_file:
       - ../.env
