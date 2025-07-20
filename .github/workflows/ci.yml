@@ -9,6 +9,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -18,11 +19,18 @@ jobs:
       with:
         python-version: "3.10"
 
-    - name: Install dependencies
+    # --- THIS IS THE FIX ---
+    # Install system-level dependencies required by Python packages
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y librdkafka-dev
+
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
     - name: Run tests with pytest
       run: |
-        pytest --cov=pipeline --cov-report=xml
+        python -m pytest --cov=pipeline --cov-report=xml
