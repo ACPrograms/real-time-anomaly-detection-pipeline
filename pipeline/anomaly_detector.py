@@ -18,8 +18,6 @@ class AnomalyDetector:
         """
         self.window_size = window_size
         self.z_score_threshold = z_score_threshold
-        # A dictionary to hold the history of data points for each sensor metric
-        # Key: (sensor_id, metric_type), Value: deque of recent values
         self.data_history = {}
 
     def check(self, data_point):
@@ -40,30 +38,26 @@ class AnomalyDetector:
         
         history_key = (sensor_id, metric_type)
         
-        # Initialize deque for a new sensor metric
         if history_key not in self.data_history:
             self.data_history[history_key] = deque(maxlen=self.window_size)
             
         history = self.data_history[history_key]
         
-        # Default anomaly status is False
         data_point['is_anomaly'] = False
         data_point['z_score'] = None
         
-        # We need at least 2 data points to calculate standard deviation
         if len(history) > 1:
             mean = np.mean(history)
             std_dev = np.std(history)
             
-            # Avoid division by zero if all historical values are the same
             if std_dev > 0:
                 z_score = abs((value - mean) / std_dev)
-                data_point['z_score'] = round(z_score, 2)
+                
+                data_point['z_score'] = float(round(z_score, 2))
                 
                 if z_score > self.z_score_threshold:
                     data_point['is_anomaly'] = True
         
-        # Add the current value to the history for the next calculation
         history.append(value)
         
         return data_point
