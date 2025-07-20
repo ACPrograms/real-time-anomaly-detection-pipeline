@@ -1,2 +1,6 @@
 # Kafka client for Python
 confluent-kafka
+numpy
+scikit-learn
+requests
+python-dotenv
