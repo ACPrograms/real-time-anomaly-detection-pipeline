@@ -1,9 +1,8 @@
 # Render Blueprint Specification
 # https://render.com/docs/blueprint-spec
 
-# Define the services that make up the application
 services:
-  # --- Kafka Stack (Zookeeper & Kafka Broker) ---
+  # --- Kafka Stack ---
   - name: zookeeper
     type: pserv # Private Service
     image:
@@ -35,10 +34,7 @@ services:
   # --- Our Python Application ---
   - name: data-processor
     type: pserv
-    # The build context points to the root of the repo
-    build:
-      context: .
-      dockerfilePath: Dockerfile
+    dockerfilePath: ./Dockerfile
     startCommand: "python3 -m pipeline.kafka_consumer"
     envVars:
       - fromGroup: project-secrets # Pulls secrets from the group
@@ -56,17 +52,16 @@ services:
     image:
       url: prom/prometheus:latest
     startCommand: "--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus"
-    disks:
-      - name: prometheus-data
-        mountPath: /prometheus
-        sizeGB: 1
+    disk:
+      name: prometheus-data
+      mountPath: /prometheus
+      sizeGB: 1
 
   - name: grafana
     type: web # Publicly accessible Web Service
     image:
       url: grafana/grafana:latest
-    
-# Define a managed database instance
+
 databases:
   - name: project-db
-    plan: free # This will create a free-tier PostgreSQL database
+    plan: free
