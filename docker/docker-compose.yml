@@ -12,7 +12,6 @@ services:
     depends_on:
       - zookeeper
     ports:
-      # Port for HOST to connect (e.g., our producer script)
       - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
@@ -30,16 +29,40 @@ services:
     volumes:
       - ../db/init.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
-      - ../.env # Loads credentials from the .env file at the project root
+      - ../.env
 
   data-processor:
     container_name: data-processor
-    # Tells Docker Compose to build the image from the Dockerfile in proj. root
     build:
       context: ..
       dockerfile: Dockerfile
+    # Expose the metrics port to other Docker services
+    ports:
+      - "8000:8000"
     depends_on:
       - kafka
       - postgres-db
     env_file:
       - ../.env
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090" # Access Prometheus UI on localhost:9090
+    volumes:
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    depends_on:
+      - data-processor
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000" # Access Grafana UI on localhost:3000
+    volumes:
+      - ../monitoring/grafana/provisioning/:/etc/grafana/provisioning/
+    depends_on:
+      - prometheus

@@ -11,3 +11,4 @@ pandas
 pytest
 pytest-cov
 requests-mock
+prometheus-client
