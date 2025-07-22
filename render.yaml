@@ -1,37 +1,13 @@
 # Render Blueprint Specification
 # https://render.com/docs/blueprint-spec
 
+# Define the services that make up the application
 services:
-  # --- Persistent Database Service ---
-  - name: postgres-db
-    type: pserv # Private Service (not exposed to the internet)
-    dockerfilePath: ./docker/postgres.Dockerfile # We need a dedicated Dockerfile for Postgres
-    envVars:
-      - key: POSTGRES_DB
-        fromService:
-          type: postgres
-          name: project-db
-          property: database
-      - key: POSTGRES_USER
-        fromService:
-          type: postgres
-          name: project-db
-          property: user
-      - key: POSTGRES_PASSWORD
-        fromService:
-          type: postgres
-          name: project-db
-          property: password
-    # Attach a persistent disk for data
-    disks:
-      - name: postgres-data
-        mountPath: /var/lib/postgresql/data
-        sizeGB: 1
-
   # --- Kafka Stack (Zookeeper & Kafka Broker) ---
   - name: zookeeper
-    type: pserv
-    dockerimage: confluentinc/cp-zookeeper:7.5.0
+    type: pserv # Private Service
+    image:
+      url: confluentinc/cp-zookeeper:7.5.0
     envVars:
       - key: ZOOKEEPER_CLIENT_PORT
         value: 2181
@@ -40,37 +16,35 @@ services:
 
   - name: kafka
     type: pserv
-    dockerimage: confluentinc/cp-kafka:7.5.0
+    image:
+      url: confluentinc/cp-kafka:7.5.0
     envVars:
       - key: KAFKA_BROKER_ID
         value: 1
       - key: KAFKA_ZOOKEEPER_CONNECT
-        value: zookeeper:2181 # Render's internal DNS handles this
+        value: zookeeper:2181
       - key: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-        value: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+        value: PLAINTEXT:PLAINTEXT
       - key: KAFKA_ADVERTISED_LISTENERS
-        # For internal communication within Render
-        value: PLAINTEXT_INTERNAL://kafka:9092
+        value: PLAINTEXT://kafka:9092
       - key: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
         value: 1
       - key: KAFKA_AUTO_CREATE_TOPICS_ENABLE
         value: "true"
 
-  # --- Python Application ---
+  # --- Our Python Application ---
   - name: data-processor
     type: pserv
-    # Build from our main Dockerfile
-    dockerfilePath: ./Dockerfile
-    # Use the user's preference for python3
+    # The build context points to the root of the repo
+    build:
+      context: .
+      dockerfilePath: Dockerfile
     startCommand: "python3 -m pipeline.kafka_consumer"
     envVars:
-      # Pull secrets from the environment group
-      - fromGroup: project-secrets
-      # Point to the internal Kafka service
+      - fromGroup: project-secrets # Pulls secrets from the group
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: kafka:9092
-      # Render provides a connection string for its managed DB
-      - key: DATABASE_URL
+      - key: DATABASE_URL # Gets the internal connection string
         fromService:
           type: postgres
           name: project-db
@@ -79,27 +53,20 @@ services:
   # --- Monitoring Stack ---
   - name: prometheus
     type: pserv
-    dockerimage: prom/prometheus:latest
-    startCommand: "--config.file=/etc/prometheus/prometheus.yml"
-    # Attach a persistent disk for metrics data
+    image:
+      url: prom/prometheus:latest
+    startCommand: "--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus"
     disks:
       - name: prometheus-data
         mountPath: /prometheus
         sizeGB: 1
-    # We will upload the prometheus.yml config via the Render dashboard
 
   - name: grafana
-    type: web # Web Service (publicly accessible)
-    dockerimage: grafana/grafana:latest
-    envVars:
-      # Tell Grafana where to find Prometheus
-      - key: GF_PROVISIONING_DATASOURCES_PATH
-        value: /etc/grafana/provisioning/datasources
-      - key: GF_PROVISIONING_DASHBOARDS_PATH
-        value: /etc/grafana/provisioning/dashboards
-    # We will upload the Grafana config files via the Render dashboard
-
+    type: web # Publicly accessible Web Service
+    image:
+      url: grafana/grafana:latest
+    
+# Define a managed database instance
 databases:
-  # Create a managed PostgreSQL instance on Render
   - name: project-db
-    plan: free
+    plan: free # This will create a free-tier PostgreSQL database

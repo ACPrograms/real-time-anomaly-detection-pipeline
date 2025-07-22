@@ -1,5 +1,6 @@
 import json
 import sys
+import os
 import time
 from threading import Thread
 from confluent_kafka import Consumer, KafkaException, KafkaError
