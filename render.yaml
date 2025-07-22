@@ -1,10 +1,16 @@
-# Render Blueprint Specification
-# https://render.com/docs/blueprint-spec
+# Render Blueprint Specification v1
 
+# Define the managed database first.
+databases:
+  - name: project-db # This will be our PostgreSQL database
+    plan: free
+
+# Define the services that make up the application.
 services:
   # --- Kafka Stack ---
   - name: zookeeper
     type: pserv # Private Service
+    runtime: docker # IMPORTANT: Specify the runtime
     image:
       url: confluentinc/cp-zookeeper:7.5.0
     envVars:
@@ -15,13 +21,14 @@ services:
 
   - name: kafka
     type: pserv
+    runtime: docker
     image:
       url: confluentinc/cp-kafka:7.5.0
     envVars:
       - key: KAFKA_BROKER_ID
         value: 1
       - key: KAFKA_ZOOKEEPER_CONNECT
-        value: zookeeper:2181
+        value: zookeeper:2181 # Internal service discovery
       - key: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
         value: PLAINTEXT:PLAINTEXT
       - key: KAFKA_ADVERTISED_LISTENERS
@@ -34,24 +41,22 @@ services:
   # --- Our Python Application ---
   - name: data-processor
     type: pserv
+    runtime: docker
     dockerfilePath: ./Dockerfile
     startCommand: "python3 -m pipeline.kafka_consumer"
     envVars:
-      - fromGroup: project-secrets # Pulls secrets from the group
+      - fromGroup: project-secrets # Pulls secrets (API keys, etc.)
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: kafka:9092
-      - key: DATABASE_URL # Gets the internal connection string
-        fromService:
-          type: postgres
-          name: project-db
-          property: connectionString
+      # NOTE: DATABASE_URL is automatically injected by Render from the managed 'project-db' service.
 
   # --- Monitoring Stack ---
   - name: prometheus
     type: pserv
+    runtime: docker
     image:
       url: prom/prometheus:latest
-    startCommand: "--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus"
+    startCommand: "--config.file=/etc/prometheus/config/prometheus.yml --storage.tsdb.path=/prometheus"
     disk:
       name: prometheus-data
       mountPath: /prometheus
@@ -59,9 +64,6 @@ services:
 
   - name: grafana
     type: web # Publicly accessible Web Service
+    runtime: docker
     image:
       url: grafana/grafana:latest
-
-databases:
-  - name: project-db
-    plan: free
