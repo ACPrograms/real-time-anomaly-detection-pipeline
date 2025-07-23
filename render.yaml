@@ -1,28 +1,26 @@
 # Render Blueprint Specification v1
-# Final version validated against Render's official examples and syntax.
+# Final version using the correct object syntax for Docker images.
 
-# Define the managed database instance first.
 databases:
   - name: project-db
     plan: free
 
-# Define environment variable groups for secrets.
 envVarGroups:
   - name: project-secrets
     envVars:
       - key: SLACK_WEBHOOK_URL
-        sync: false # Tells Render not to write the secret value back to this file.
+        sync: false
       - key: OPENWEATHER_API_KEY
         sync: false
 
-# Define the application services.
 services:
   # --- Kafka Stack ---
   - name: zookeeper
-    type: pserv # Private Service
+    type: pserv
     runtime: docker
-    # FIX: The 'image' key should directly specify the image name as a string.
-    image: confluentinc/cp-zookeeper:7.5.0
+    # FIX: The 'image' key requires a nested 'url' object.
+    image:
+      url: confluentinc/cp-zookeeper:7.5.0
     envVars:
       - key: ZOOKEEPER_CLIENT_PORT
         value: 2181
@@ -32,7 +30,8 @@ services:
   - name: kafka
     type: pserv
     runtime: docker
-    image: confluentinc/cp-kafka:7.5.0
+    image:
+      url: confluentinc/cp-kafka:7.5.0
     envVars:
       - key: KAFKA_BROKER_ID
         value: 1
@@ -51,20 +50,19 @@ services:
   - name: data-processor
     type: pserv
     runtime: docker
-    # These keys are correct for building from a local Dockerfile.
     dockerContext: .
     dockerfilePath: Dockerfile
     envVars:
       - fromGroup: project-secrets
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: kafka:9092
-      # DATABASE_URL is automatically injected by Render from the 'project-db' database.
 
   # --- Monitoring Stack ---
   - name: prometheus
     type: pserv
     runtime: docker
-    image: prom/prometheus:latest
+    image:
+      url: prom/prometheus:latest
     dockerCommand: "--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus"
     disk:
       name: prometheus-data
@@ -72,7 +70,8 @@ services:
       sizeGB: 1
 
   - name: grafana
-    type: web # Publicly accessible
+    type: web
     runtime: docker
-    image: grafana/grafana:latest
+    image:
+      url: grafana/grafana:latest
     healthCheckPath: /api/health
