@@ -1,29 +1,28 @@
 # Render Blueprint Specification v1
-# This is the final version, validated against official documentation examples.
+# Final version validated against Render's official examples and syntax.
 
-# Define environment variable groups first for clarity.
+# Define the managed database instance first.
+databases:
+  - name: project-db
+    plan: free
+
+# Define environment variable groups for secrets.
 envVarGroups:
   - name: project-secrets
     envVars:
       - key: SLACK_WEBHOOK_URL
-        sync: false # Do not sync the value back to the yaml
+        sync: false # Tells Render not to write the secret value back to this file.
       - key: OPENWEATHER_API_KEY
         sync: false
-
-# Define the managed database instance.
-# The DATABASE_URL from this will be automatically injected into all services.
-databases:
-  - name: project-db
-    plan: free
 
 # Define the application services.
 services:
   # --- Kafka Stack ---
   - name: zookeeper
     type: pserv # Private Service
-    runtime: docker # Specify the runtime
-    image:
-      url: confluentinc/cp-zookeeper:7.5.0
+    runtime: docker
+    # FIX: The 'image' key should directly specify the image name as a string.
+    image: confluentinc/cp-zookeeper:7.5.0
     envVars:
       - key: ZOOKEEPER_CLIENT_PORT
         value: 2181
@@ -33,8 +32,7 @@ services:
   - name: kafka
     type: pserv
     runtime: docker
-    image:
-      url: confluentinc/cp-kafka:7.5.0
+    image: confluentinc/cp-kafka:7.5.0
     envVars:
       - key: KAFKA_BROKER_ID
         value: 1
@@ -49,27 +47,24 @@ services:
       - key: KAFKA_AUTO_CREATE_TOPICS_ENABLE
         value: "true"
 
-  # --- Our Python Application ---
+  # --- Our Python Application (Built from source) ---
   - name: data-processor
     type: pserv
     runtime: docker
-    # Define the build context and Dockerfile path
+    # These keys are correct for building from a local Dockerfile.
     dockerContext: .
     dockerfilePath: Dockerfile
-    # The CMD from the Dockerfile will be used automatically.
     envVars:
       - fromGroup: project-secrets
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: kafka:9092
-      # DATABASE_URL is automatically injected by Render.
+      # DATABASE_URL is automatically injected by Render from the 'project-db' database.
 
   # --- Monitoring Stack ---
   - name: prometheus
     type: pserv
     runtime: docker
-    image:
-      url: prom/prometheus:latest
-    # FIX: Use 'dockerCommand' to provide the arguments to the container's entrypoint.
+    image: prom/prometheus:latest
     dockerCommand: "--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus"
     disk:
       name: prometheus-data
@@ -79,7 +74,5 @@ services:
   - name: grafana
     type: web # Publicly accessible
     runtime: docker
-    image:
-      url: grafana/grafana:latest
-    # Add a health check to ensure Render knows when it's ready.
+    image: grafana/grafana:latest
     healthCheckPath: /api/health
