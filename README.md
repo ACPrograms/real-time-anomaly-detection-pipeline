@@ -32,33 +32,34 @@ flowchart TD
         J[Slack API]
     end
 
-    subgraph "Host Machine"
-        A[Data Producer (API Client)]
+    subgraph "Host Machine (Your Computer)"
+        A[Data Producer]
         S[Streamlit Dashboard]
     end
 
     subgraph "Docker Environment (Virtual Network)"
         B[Kafka Broker]
-        D[Python Consumer: data-processor]
+        D[Python Consumer]
         H[PostgreSQL Database]
         P[Prometheus]
         G[Grafana]
     end
 
+    %% Define Connections
     K -- Fetches data --> A
-    A -- (localhost:29092) --> B
+    A -- Sends to --> B
     D -- Consumes from --> B
     
-    D -- Analyzes data --> D
     D -- Anomaly Found --> F(Slack Alert)
     F -- Sends alert via HTTP --> J
     
     D -- Writes all data --> H
     S -- Queries data from --> H
 
-    P -- Scrapes /metrics endpoint --> D
-    G -- Queries metrics from --> P
+    P -- Scrapes /metrics --> D
+    G -- Queries metrics --> P
 
+    %% Styling
     style D fill:#f9f,stroke:#333,stroke-width:2px
     style H fill:#ccf,stroke:#333,stroke-width:2px
     style G fill:#FFBF00,stroke:#333,stroke-width:2px
