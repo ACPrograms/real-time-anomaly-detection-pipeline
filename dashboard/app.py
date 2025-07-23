@@ -9,7 +9,7 @@ import time
 load_dotenv()
 
 # Use the specific database URL meant for the dashboard running on the host
-DATABASE_URL = os.getenv("DASHBOARD_DATABASE_URL")
+DATABASE_URL = os.getenv("RENDER_POSTGRES_URL", os.getenv("DASHBOARD_DATABASE_URL"))
 
 # Page configuration
 st.set_page_config(

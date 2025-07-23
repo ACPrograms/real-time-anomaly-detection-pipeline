@@ -18,7 +18,7 @@ ANOMALIES_DETECTED = Counter('anomalies_detected_total', 'Total number of anomal
 CURRENT_SENSOR_VALUE = Gauge('current_sensor_value', 'The most recent value of a sensor', ['sensor_id', 'metric_type'])
 PROCESSING_LATENCY = Histogram('processing_latency_seconds', 'Time taken to process a message')
 
-# Use environment variable, default to internal Docker name for local dev
+# Use environment variable. Default to internal Docker name for local development.
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
 KAFKA_CONFIG = {
     'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,

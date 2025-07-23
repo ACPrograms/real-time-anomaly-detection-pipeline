@@ -1,19 +1,25 @@
-databases:
-  - name: project-db
-    plan: free
+# Render Blueprint Specification v1
+# https://render.com/docs/blueprint-spec
 
+# Environment group to hold our secret API keys
+# We will create this in the Render Dashboard and add our keys there.
 envVarGroups:
   - name: project-secrets
     envVars:
       - key: SLACK_WEBHOOK_URL
-        sync: false
       - key: OPENWEATHER_API_KEY
-        sync: false
 
+# Managed PostgreSQL database on Render's free tier
+databases:
+  - name: project-db
+    plan: free # This is crucial for keeping it free
+
+# The services that make up our application
 services:
-  - name: zookeeper
-    type: pserv
-    runtime: docker
+  # Zookeeper: A private service for Kafka's use
+  - type: pserv
+    name: zookeeper
+    runtime: image
     image:
       url: confluentinc/cp-zookeeper:7.5.0
     envVars:
@@ -22,49 +28,40 @@ services:
       - key: ZOOKEEPER_TICK_TIME
         value: 2000
 
-  - name: kafka
-    type: pserv
-    runtime: docker
+  # Kafka: A private service that depends on Zookeeper
+  - type: pserv
+    name: kafka
+    runtime: image
     image:
       url: confluentinc/cp-kafka:7.5.0
     envVars:
       - key: KAFKA_BROKER_ID
         value: 1
       - key: KAFKA_ZOOKEEPER_CONNECT
-        value: zookeeper:2181
+        value: zookeeper:2181 # Render's internal DNS handles this name resolution
       - key: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
         value: PLAINTEXT:PLAINTEXT
       - key: KAFKA_ADVERTISED_LISTENERS
-        value: PLAINTEXT://kafka:9092
+        value: PLAINTEXT://kafka:9092 # For communication inside Render's private network
       - key: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
         value: 1
       - key: KAFKA_AUTO_CREATE_TOPICS_ENABLE
         value: "true"
 
-  - name: data-processor
-    type: pserv
+  # data-processor: Our Python application built from our Dockerfile
+  - type: worker # A background worker is a better fit than a private service here
+    name: data-processor
     runtime: docker
-    dockerContext: .
-    dockerfilePath: Dockerfile
+    dockerfilePath: ./Dockerfile
+    startCommand: "python3 -m pipeline.kafka_consumer" # Use python3 as requested
     envVars:
+      # Pulls all variables from the 'project-secrets' group we created above
       - fromGroup: project-secrets
+      # This points to the Kafka service running on Render's private network
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: kafka:9092
-
-  - name: prometheus
-    type: pserv
-    runtime: docker
-    image:
-      url: prom/prometheus:latest
-    dockerCommand: "--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus"
-    disk:
-      name: prometheus-data
-      mountPath: /prometheus
-      sizeGB: 1
-
-  - name: grafana
-    type: web
-    runtime: docker
-    image:
-      url: grafana/grafana:latest
-    healthCheckPath: /api/health
+      # This gets the connection string from our managed 'project-db' database
+      - key: DATABASE_URL
+        fromDatabase:
+          name: project-db
+          property: connectionString

@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 load_dotenv()
 
 # --- Configuration ---
-# Use environment variable for Kafka, default to localhost for local dev
+# Use environment variable for Kafka. Default to localhost for local development.
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:29092')
 KAFKA_CONFIG = {
     'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
