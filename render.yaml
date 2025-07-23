@@ -1,6 +1,3 @@
-# Render Blueprint Specification v1
-# Final version using the correct object syntax for Docker images.
-
 databases:
   - name: project-db
     plan: free
@@ -14,11 +11,9 @@ envVarGroups:
         sync: false
 
 services:
-  # --- Kafka Stack ---
   - name: zookeeper
     type: pserv
     runtime: docker
-    # FIX: The 'image' key requires a nested 'url' object.
     image:
       url: confluentinc/cp-zookeeper:7.5.0
     envVars:
@@ -46,7 +41,6 @@ services:
       - key: KAFKA_AUTO_CREATE_TOPICS_ENABLE
         value: "true"
 
-  # --- Our Python Application (Built from source) ---
   - name: data-processor
     type: pserv
     runtime: docker
@@ -57,7 +51,6 @@ services:
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: kafka:9092
 
-  # --- Monitoring Stack ---
   - name: prometheus
     type: pserv
     runtime: docker
