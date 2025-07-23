@@ -85,11 +85,14 @@ flowchart TD
 
 ### Advanced Systems Monitoring (Grafana)
 Live dashboard showing pipeline throughput, latency, and anomaly counts.
+
 ![Grafana Dashboard](screenshots/dashboard_grafana.png)
 
 ### Data Content Dashboard (Streamlit)
 Live view of the raw data flowing into the database and a log of detected anomalies.
+
 ![Streamlit Dashboard](screenshots/dashboard_streamlit.png)
+![Streamlit Dashboard](screenshots/dashboard_streamlit2.png)
 
 ### Prometheus & Slack
 Prometheus successfully scraping metrics from the Python application, and a resulting anomaly alert in Slack.
