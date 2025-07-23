@@ -41,8 +41,6 @@ services:
     type: pserv
     runtime: docker
     dockerfilePath: ./Dockerfile
-    # FIX: Removed startCommand. The command is now defined by the
-    # 'CMD' instruction in our main project Dockerfile.
     envVars:
       - fromGroup: project-secrets
       - key: KAFKA_BOOTSTRAP_SERVERS
@@ -54,8 +52,6 @@ services:
     runtime: docker
     image:
       url: prom/prometheus:latest
-    # FIX: Removed startCommand. We will set this via the Render dashboard's
-    # "Command" field during the manual config step.
     disk:
       name: prometheus-data
       mountPath: /prometheus
