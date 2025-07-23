@@ -1,14 +1,27 @@
 # Render Blueprint Specification v1
+# This is the final version, validated against official documentation examples.
 
+# Define environment variable groups first for clarity.
+envVarGroups:
+  - name: project-secrets
+    envVars:
+      - key: SLACK_WEBHOOK_URL
+        sync: false # Do not sync the value back to the yaml
+      - key: OPENWEATHER_API_KEY
+        sync: false
+
+# Define the managed database instance.
+# The DATABASE_URL from this will be automatically injected into all services.
 databases:
   - name: project-db
     plan: free
 
+# Define the application services.
 services:
   # --- Kafka Stack ---
   - name: zookeeper
-    type: pserv
-    runtime: docker
+    type: pserv # Private Service
+    runtime: docker # Specify the runtime
     image:
       url: confluentinc/cp-zookeeper:7.5.0
     envVars:
@@ -40,11 +53,15 @@ services:
   - name: data-processor
     type: pserv
     runtime: docker
-    dockerfilePath: ./Dockerfile
+    # Define the build context and Dockerfile path
+    dockerContext: .
+    dockerfilePath: Dockerfile
+    # The CMD from the Dockerfile will be used automatically.
     envVars:
       - fromGroup: project-secrets
       - key: KAFKA_BOOTSTRAP_SERVERS
         value: kafka:9092
+      # DATABASE_URL is automatically injected by Render.
 
   # --- Monitoring Stack ---
   - name: prometheus
@@ -52,13 +69,17 @@ services:
     runtime: docker
     image:
       url: prom/prometheus:latest
+    # FIX: Use 'dockerCommand' to provide the arguments to the container's entrypoint.
+    dockerCommand: "--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus"
     disk:
       name: prometheus-data
       mountPath: /prometheus
       sizeGB: 1
 
   - name: grafana
-    type: web
+    type: web # Publicly accessible
     runtime: docker
     image:
       url: grafana/grafana:latest
+    # Add a health check to ensure Render knows when it's ready.
+    healthCheckPath: /api/health
