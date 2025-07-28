@@ -1,5 +1,7 @@
 # Real-Time IoT Anomaly Detection Pipeline with Advanced Monitoring
 
+Updated Mon Jul 28 4:55 AM
+
 ![CI Badge](https://github.com/ACPrograms/real-time-anomaly-detection-pipeline/actions/workflows/ci.yml/badge.svg)
 
 This project is a complete, end-to-end data engineering solution that demonstrates a scalable, real-time pipeline for ingesting, processing, and analyzing streaming data. It identifies anomalies using statistical methods and triggers instant alerts. The project is fully containerized and features two distinct monitoring solutions: a data-centric Streamlit dashboard and an industry-standard systems monitoring stack with Prometheus and Grafana.
